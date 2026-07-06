@@ -7,7 +7,7 @@ from .serializers import AppointmentSerializer
 
 #Viewset
 class AppointmentViewSet(viewsets.ModelViewSet):
-    queryset = Appointment.objects.all()
+    queryset = Appointment.objects.all().order_by("schedule_at")
     serializer_class = AppointmentSerializer
 
     #filtroset_fields
@@ -15,7 +15,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
     ordering_fields = ["schedule_at", "created_at"]
     filterset_fields = ["status", "patient"]
 
-    #Não permitir dois agendamentos no mesmo horário.
+    #Não permitir dois agendamentos no mesmo horário regra de negócio.
     def create(self, request, *args, **kwargs):
         schedule_at = request.data.get("schedule_at")
 
@@ -43,3 +43,21 @@ class AppointmentViewSet(viewsets.ModelViewSet):
             serializer.data,
             status=status.HTTP_201_CREATED
         )
+    
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        schedule_at = request.data.get("schedule_at")
+
+        if schedule_at:
+            exists = Appointment.objects.filter(
+                schedule_at=schedule_at
+            ).exclude(id=instance.id).exists()
+
+            if exists:
+                return Response(
+                    {"detail": "Já existe um agendamento neste horário."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        return super().update(request, *args, **kwargs)
