@@ -7,6 +7,12 @@ from appointments.views import AppointmentViewSet
 from therapy_sessions.views import TherapySessionViewSet
 from finances.views import PaymentViewSet
 
+from django.http import JsonResponse
+
+
+def health_check(request):
+    return JsonResponse({"status": "ok"})
+
 #Cria automaticamente as URLs (endpoints)
 router = DefaultRouter()
 
@@ -21,4 +27,6 @@ urlpatterns = [
 
     path("api/token/", TokenObtainPairView.as_view()),
     path("api/token/refresh/", TokenRefreshView.as_view()),
+
+    path("health/", health_check),
 ]
