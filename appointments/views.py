@@ -26,7 +26,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -43,7 +43,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
             serializer.data,
             status=status.HTTP_201_CREATED
         )
-    
+
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
 
@@ -61,3 +61,24 @@ class AppointmentViewSet(viewsets.ModelViewSet):
                 )
 
         return super().update(request, *args, **kwargs)
+
+    def perform_update(self, serializer):
+        appointment = serializer.save()
+        if appointment.status == "cancelled":
+            try:
+                payment = appointment.payment
+                if payment and payment.status == "pending":
+                    payment.status = "cancelled"
+                    payment.save(update_fields=["status"])
+            except Exception:
+                pass
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        try:
+            payment = instance.payment
+            if payment and payment.status == "pending":
+                payment.delete()
+        except Exception:
+            pass
+        return super().destroy(request, *args, **kwargs)
