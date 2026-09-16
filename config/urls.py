@@ -13,6 +13,8 @@ from django.http import JsonResponse
 def health_check(request):
     return JsonResponse({"status": "ok"})
 
+from patients.views import PatientViewSet, ChangePasswordView
+
 #Cria automaticamente as URLs (endpoints)
 router = DefaultRouter()
 
@@ -21,12 +23,19 @@ router.register(r"appointments", AppointmentViewSet)
 router.register(r"therapy-sessions", TherapySessionViewSet)
 router.register(r"payments", PaymentViewSet)
 
+from rest_framework.throttling import ScopedRateThrottle
+
+class ThrottledTokenObtainPairView(TokenObtainPairView):
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "auth"
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("api/", include(router.urls)),
 
-    path("api/token/", TokenObtainPairView.as_view()),
+    path("api/token/", ThrottledTokenObtainPairView.as_view()),
     path("api/token/refresh/", TokenRefreshView.as_view()),
+    path("api/change-password/", ChangePasswordView.as_view()),
 
     path("health/", health_check),
 ]

@@ -208,3 +208,34 @@ class MultiTenantIsolationTests(APITestCase):
         }
         response = self.client.post("/api/payments/", payload)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    # ------------------ PASSWORD CHANGE ------------------
+
+    def test_change_password_success(self):
+        self.client.force_authenticate(user=self.therapist_a)
+        payload = {
+            "old_password": "password123",
+            "new_password": "new_password456",
+        }
+        response = self.client.post("/api/change-password/", payload)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.therapist_a.refresh_from_db()
+        self.assertTrue(self.therapist_a.check_password("new_password456"))
+
+    def test_change_password_wrong_old_password_rejected(self):
+        self.client.force_authenticate(user=self.therapist_a)
+        payload = {
+            "old_password": "senha_errada",
+            "new_password": "new_password456",
+        }
+        response = self.client.post("/api/change-password/", payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_change_password_too_short_rejected(self):
+        self.client.force_authenticate(user=self.therapist_a)
+        payload = {
+            "old_password": "password123",
+            "new_password": "123",
+        }
+        response = self.client.post("/api/change-password/", payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
