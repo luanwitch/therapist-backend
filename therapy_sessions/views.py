@@ -9,7 +9,7 @@ from .serializers import TherapySessionSerializer
 
 
 class TherapySessionViewSet(viewsets.ModelViewSet):
-    queryset = TherapySession.objects.all()
+    queryset = TherapySession.objects.none()
     serializer_class = TherapySessionSerializer
 
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
@@ -17,13 +17,23 @@ class TherapySessionViewSet(viewsets.ModelViewSet):
     ordering_fields = ["session_date", "created_at"]
     filterset_fields = ["patient", "patient_mood"]
 
+    def get_queryset(self):
+        return (
+            TherapySession.objects.filter(patient__therapist=self.request.user)
+            .select_related("patient", "appointment")
+            .order_by("-session_date")
+        )
+
     def create(self, request, *args, **kwargs):
         appointment_id = request.data.get("appointment")
         patient_id = request.data.get("patient")
 
         if appointment_id:
             try:
-                appointment = Appointment.objects.get(id=appointment_id)
+                appointment = Appointment.objects.get(
+                    id=appointment_id,
+                    patient__therapist=request.user
+                )
             except Appointment.DoesNotExist:
                 return Response(
                     {"error": "Agendamento não encontrado."},

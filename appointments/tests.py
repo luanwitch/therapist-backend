@@ -16,6 +16,7 @@ class AppointmentAPITests(APITestCase):
             full_name="Paciente Teste",
             email="paciente@teste.com",
             phone="11999999999",
+            therapist=self.user,
         )
 
     def test_create_appointment_success(self):
